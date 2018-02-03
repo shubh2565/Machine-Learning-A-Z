@@ -1,0 +1,2 @@
+This contains some of the techniques used in preprocessing of data before using in any machine learning model.
+Some of the techniques covered are filling of missing data, one hot encoding, splitting of data and feature scaling.
