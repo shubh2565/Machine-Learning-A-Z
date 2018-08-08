@@ -1,0 +1,91 @@
+---
+title: "Data Preprocessing for Machine Learning/Data Science"
+author: "Shubham Agrawal"
+date: "8 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results='asis')
+```
+
+##Introduction
+Data preprocessing is transforming of raw data into an understandable data, which is suitable for machine learning and data science analysis. If there is much irrelevant and redundant information present or noisy and unreliable data, then knowledge discovery during the training phase is more difficult. Data preparation and filtering steps can take considerable amount of processing time. Data preprocessing includes cleaning, Instance selection, normalization, transformation, feature extraction and selection, etc. The product of data preprocessing is the final training set (**Source**:_Wikipedia_). Here, we have covered some of the basic techniques for preprocessing of data.
+
+The data can be downloaded from my GitHub account:
+
+ Dataset: [GitHub link](https://github.com/shubh2565/Machine-Learning-A-Z/tree/master/Data%20preprocessing)
+ 
+
+
+### Loading the data
+First, set your working directory to the location where _Data.csv_ file is present. Then, load the CSV file.
+
+```{r}
+dataset <- read.csv('Data.csv')
+library(hwriter)
+cat(hwrite(dataset, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+
+### Missing Data?
+We can replace the missing data by taking the mean of all values present in that column. _(Missing age value in 7th row and salary value in 5th row)_
+
+```{r}
+dataset$Age <- ifelse(is.na(dataset$Age),
+                      ave(dataset$Age, FUN = function(x) mean(x, na.rm = TRUE)),
+                      dataset$Age)
+dataset$Salary <- ifelse(is.na(dataset$Salary),
+                         ave(dataset$Salary, FUN = function(x) mean(x, na.rm = TRUE)),
+                         dataset$Salary)
+library(hwriter)
+cat(hwrite(dataset, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+
+### Encoding categorical data
+We encode text data into numbers. Unlike in python, where we are required to use _One Hot Encoding_, in R, we can simply use _factor_ method.
+
+```{r}
+dataset$Country <- factor(dataset$Country,
+                          levels = c('France', 'Germany', 'Spain'),
+                          labels = c(1, 2, 3))
+dataset$Purchased <- factor(dataset$Purchased,
+                            levels = c('No', 'Yes'),
+                            labels = c(0, 1))
+cat(hwrite(dataset, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+
+### Splitting the dataset into the Training set and Test set
+
+```{r}
+library(caTools)
+set.seed(144)
+split <- sample.split(dataset$Purchased, SplitRatio = 0.8)
+training_set <- subset(dataset, split == TRUE)
+test_set <- subset(dataset, split == FALSE)
+cat(hwrite(training_set, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+
+cat(hwrite(test_set, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+
+### Feature Scaling
+Since the range of values of raw data varies widely, in some machine learning algorithms, objective functions will not work properly without normalization. For example, the majority of classifiers calculate the distance between two points by the Euclidean distance. If one of the features has a broad range of values, the distance will be governed by this particular feature. Therefore, the range of all features should be normalized so that each feature contributes approximately proportionately to the final distance.
+
+Another reason why feature scaling is applied is that gradient descent converges much faster with feature scaling than without it.
+
+ Source: [Feature scaling](https://en.wikipedia.org/wiki/Feature_scaling)
+ 
+```{r}
+training_set[, 2:3] <- scale(training_set[, 2:3])
+test_set[, 2:3] <- scale(test_set[, 2:3])
+cat(hwrite(training_set, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+
+cat(hwrite(test_set, border = 1, table.frame='void', width='600px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
