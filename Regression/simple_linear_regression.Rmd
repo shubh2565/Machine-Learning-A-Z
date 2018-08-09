@@ -1,0 +1,94 @@
+---
+title: "Simple Linear Regression"
+author: "Shubham Agrawal"
+date: "8 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results='asis')
+```
+
+## Introduction
+In statistics, linear regression is a linear approach to modelling the relationship between a scalar response (or **dependent variable**) and one or more explanatory variables (or **independent variables**). The case of one explanatory variable is called simple linear regression.
+
+Linear regression has many practical uses. Most applications fall into one of the following two broad categories:
+
+* If the goal is prediction, or forecasting, or error reduction,[clarification needed] linear regression can be used to fit a predictive model to an observed data set of values of the response and explanatory variables. After developing such a model, if additional values of the explanatory variables are collected without an accompanying response value, the fitted model can be used to make a prediction of the response.
+* If the goal is to explain variation in the response variable that can be attributed to variation in the explanatory variables, linear regression analysis can be applied to quantify the strength of the relationship between the response and the explanatory variables, and in particular to determine whether some explanatory variables may have no linear relationship with the response at all, or to identify which subsets of explanatory variables may contain redundant information about the response.
+
+Linear regression models are often fitted using the **least squares** approach, but they may also be fitted in other ways, such as by minimizing the "lack of fit" in some other norm (as with least absolute deviations regression), or by minimizing a penalized version of the least squares cost function as in ridge regression (L2-norm penalty) and lasso (L1-norm penalty).
+
+Source: [Linear regression](https://en.wikipedia.org/wiki/Linear_regression)
+
+Here, we will fit our linear regression model for __Salary_Data.csv__, where years of experience is independent variable and salary is a dependent variable. Dataset can be downloaded from the following link:
+
+Dataset: [Salary_Data.csv](https://github.com/shubh2565/Machine-Learning-A-Z/tree/master/Regression)
+
+### Importing and splitting the dataset into training and test data
+
+```{r}
+dataset <- read.csv('Salary_Data.csv')
+
+library(caTools)
+
+set.seed(100)
+split <- sample.split(dataset$Salary, SplitRatio = 2/3)
+training_set <- subset(dataset, split == TRUE)
+test_set <- subset(dataset, split == FALSE)
+
+library(hwriter)
+
+cat(hwrite(training_set, border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+
+cat(hwrite(test_set, border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+### Fitting Simple Linear Regression to the Training set
+
+```{r}
+regressor <- lm(formula = Salary ~ YearsExperience,
+               data = training_set)
+summary(regressor)
+```
+
+
+### Predicting the Test set results
+
+```{r}
+y_pred <- predict(regressor, newdata = test_set)
+cat(hwrite(y_pred, border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+### Visualising the Training set results
+
+```{r}
+library(ggplot2)
+gtrain <- ggplot() +
+  geom_point(aes(x = training_set$YearsExperience, y = training_set$Salary),
+             colour = 'red') +
+  geom_line(aes(x = training_set$YearsExperience, y = predict(regressor, newdata = training_set)),
+            colour = 'blue') +
+  ggtitle('Salary vs Experience (Training set)') +
+  xlab('Years of experience') +
+  ylab('Salary')
+print(gtrain)
+```
+
+
+### Visualising the Test set results
+
+```{r}
+library(ggplot2)
+gtest <- ggplot() +
+  geom_point(aes(x = test_set$YearsExperience, y = test_set$Salary),
+             colour = 'red') +
+  geom_line(aes(x = training_set$YearsExperience, y = predict(regressor, newdata = training_set)),
+            colour = 'blue') +
+  ggtitle('Salary vs Experience (Test set)') +
+  xlab('Years of experience') +
+  ylab('Salary')
+print(gtest)
+```
