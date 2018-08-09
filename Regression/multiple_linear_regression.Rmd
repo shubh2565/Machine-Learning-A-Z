@@ -1,0 +1,137 @@
+---
+title: "Multiple Linear Regression"
+author: "Shubham Agrawal"
+date: "9 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In statistics, linear regression is a linear approach to modelling the relationship between a scalar response (or **dependent variable**) and one or more explanatory variables (or **independent variables**). A linear regression model that contains more than one predictor variable is called a multiple linear regression model.
+
+Linear regression has many practical uses. Most applications fall into one of the following two broad categories:
+
+* If the goal is prediction, or forecasting, or error reduction,[clarification needed] linear regression can be used to fit a predictive model to an observed data set of values of the response and explanatory variables. After developing such a model, if additional values of the explanatory variables are collected without an accompanying response value, the fitted model can be used to make a prediction of the response.
+* If the goal is to explain variation in the response variable that can be attributed to variation in the explanatory variables, linear regression analysis can be applied to quantify the strength of the relationship between the response and the explanatory variables, and in particular to determine whether some explanatory variables may have no linear relationship with the response at all, or to identify which subsets of explanatory variables may contain redundant information about the response.
+
+Linear regression models are often fitted using the **least squares** approach, but they may also be fitted in other ways, such as by minimizing the "lack of fit" in some other norm (as with least absolute deviations regression), or by minimizing a penalized version of the least squares cost function as in ridge regression (L2-norm penalty) and lasso (L1-norm penalty).
+
+Source: [Linear regression](https://en.wikipedia.org/wiki/Linear_regression)
+
+Here, we will fit our linear regression model for __50_Startups.csv__, where R.D.Spend, Administration, Marketing.Spend, and State are independent variables and Profit is a dependent variable. Dataset can be downloaded from the following link:
+
+Dataset: [50_Startups.csv](https://github.com/shubh2565/Machine-Learning-A-Z/tree/master/Regression)
+
+### Importing and preprocessing the dataset
+
+```{r, , results='asis'}
+# Importing the dataset
+dataset <- read.csv('50_Startups.csv')
+
+library(hwriter)
+
+cat(hwrite(head(dataset), border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+Since, our State variable is a categorical variable, we need to encode its string values('California', 'Florida', 'New York') into factors.
+
+```{r, , results='asis'}
+# Encoding categorical data
+dataset$State <- factor(dataset$State,
+                       levels = c('California', 'Florida', 'New York'),
+                       labels = c(1, 2, 3))
+
+cat(hwrite(head(dataset), border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+
+
+# Splitting the dataset into the Training set and Test set
+library(caTools)
+set.seed(100)
+split <- sample.split(dataset$Profit, SplitRatio = 0.8)
+training_set <- subset(dataset, split == TRUE)
+test_set <- subset(dataset, split == FALSE)
+
+```
+
+
+### Fitting Multiple Linear Regression to the Training set
+
+```{r}
+regressor <- lm(formula = Profit ~ .,
+               data = training_set)
+
+summary(regressor)
+```
+
+**NOTE:** _We have the P values for different independent variables. The P values suggest that not all the independent variables are equally significant in our regression model. So, we  can eliminate the non-significant variables using Backward Elimination model._
+
+### Predicting the Test set results
+
+```{r, results='asis'}
+y_pred <- predict(regressor, newdata = test_set)
+cat(hwrite(y_pred, border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+### Backward Elimination Model
+
+Forward selection has drawbacks, including the fact that each addition of a new variable may render one or more of the already included variables non-significant. An alternate approach which avoids this is backward selection. Under this approach, one starts with fitting a model with all the variables of interest (following the initial screen). Then the least significant variable is dropped, so long as it is not significant at our chosen critical level. We continue by successively re-fitting reduced models and applying the same rule until all remaining variables are statistically significant.
+
+```{r}
+backwardElimination <- function(x, sl) {
+  numVars = length(x)
+  for (i in c(1:numVars)){
+    regressor <- lm(formula = Profit ~ ., data = x)
+    maxVar <- max(coef(summary(regressor))[c(2:numVars), "Pr(>|t|)"])
+    if (maxVar > sl){
+      j <- which(coef(summary(regressor))[c(2:numVars), "Pr(>|t|)"] == maxVar)
+      x <- x[, -j]
+    }
+    numVars <- numVars - 1
+  }
+  return(summary(regressor))
+}
+
+SL = 0.05
+dataset = dataset[, c(1,2,3,4,5)]
+print(backwardElimination(training_set, SL))
+```
+
+After backward elimination, we realized only R.D.Spend is significant for our regression analysis. So, we fit our training data to only that variable.
+
+```{r}
+regressor <- lm(formula = Profit ~ R.D.Spend,
+                data = training_set)
+```
+
+### Visualising the Training set results
+
+```{r}
+library(ggplot2)
+gtrain <- ggplot() +
+  geom_point(aes(x = training_set$R.D.Spend, y = training_set$Profit),
+             colour = 'red') +
+  geom_line(aes(x = training_set$R.D.Spend, y = predict(regressor, newdata = training_set)),
+            colour = 'blue') +
+  ggtitle('Profit vs RnD Spend (Training set)') +
+  xlab('RnD Spend') +
+  ylab('Profit')
+print(gtrain)
+```
+
+### Visualising the Test set results
+
+```{r}
+gtrain <- ggplot() +
+  geom_point(aes(x = test_set$R.D.Spend, y = test_set$Profit),
+             colour = 'red') +
+  geom_line(aes(x = training_set$R.D.Spend, y = predict(regressor, newdata = training_set)),
+            colour = 'blue') +
+  ggtitle('Profit vs RnD Spend (Training set)') +
+  xlab('RnD Spend') +
+  ylab('Profit')
+print(gtrain)
+```
