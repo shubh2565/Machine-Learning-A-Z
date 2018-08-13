@@ -1,0 +1,149 @@
+---
+title: "P value and R squared"
+author: "Shubham Agrawal"
+date: "13 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## P Value
+P values tell you whether your hypothesis test results are statistically significant. Statistics use them all over the place. P values are the probability of observing a sample statistic that is at least as extreme as your sample statistic when you assume that the **null hypothesis** is true. The null hypothesis is usually an hypothesis of "no difference" e.g. no difference between blood pressures in group A and group B. Define a null hypothesis for each study question clearly before the start of your study.
+
+Specifically, if the null hypothesis is correct, what is the probability of obtaining an effect at least as large as the one in your sample?
+
+* High P-values: Your sample results are consistent with a null hypothesis that is true.
+* Low P-values: Your sample results are not consistent with a null hypothesis that is true.
+
+If your P value is small enough, you can conclude that your sample is so incompatible with the null hypothesis that you can reject the null for the entire population. P-values are an integral part of inferential statistics because they help you use your sample to draw conclusions about a population.
+
+The term **significance level (alpha)** is used to refer to a pre-chosen probability and the term "P value" is used to indicate a probability that you calculate after a given study.
+
+If your P value is less than the chosen significance level then you reject the null hypothesis i.e. accept that your sample gives reasonable evidence to support the alternative hypothesis. It does NOT imply a "meaningful" or "important" difference; that is for you to decide when considering the real-world relevance of your result.
+
+The choice of significance level at which you reject H0 is arbitrary. Conventionally the 5% (less than 1 in 20 chance of being wrong), 1% and 0.1% (P < 0.05, 0.01 and 0.001) levels have been used. These numbers can give a false sense of security.
+
+In the ideal world, we would be able to define a "perfectly" random sample, the most appropriate test and one definitive conclusion. We simply cannot. What we can do is try to optimise all stages of our research to minimise sources of uncertainty. When presenting P values some groups find it helpful to use the asterisk rating system as well as quoting the P value:
+
+* P < 0.05 *
+* P < 0.01 **
+* P < 0.001 ***
+
+Here are some important links to understand P-value better:
+
+* [P Values](https://www.statsdirect.com/help/basics/p_values.htm)
+* Blog: [How to Interpret P values Correctly](http://statisticsbyjim.com/hypothesis-testing/interpreting-p-values/)
+* Wikipedia: [p-value](https://en.wikipedia.org/wiki/P-value)
+* Youtube: [Understanding the p-value - Statistics Help](https://www.youtube.com/watch?v=eyknGvncKLw)
+
+## R squared
+R-squared is a goodness-of-fit measure for linear regression models. In statistics, the **coefficient of determination**, denoted R2 or r2 and pronounced "R squared", is the proportion of the variance in the dependent variable that is predictable from the independent variable(s). R-squared measures the strength of the relationship between your model and the dependent variable on a convenient 0 – 100% scale.
+
+![Definition](/home/shubham/udemy/course2/definition.png)
+_Source: Wikipedia_
+
+### Caveats
+
+R2 does not indicate whether:
+
+* the independent variables are a cause of the changes in the dependent variable;
+* omitted-variable bias exists;
+* the correct regression was used;
+* the most appropriate set of independent variables has been chosen;
+* there is collinearity present in the data on the explanatory variables;
+* the model might be improved by using transformed versions of the existing set of independent variables;
+* there are enough data points to make a solid conclusion.
+
+### Adjusted R squared
+The use of an adjusted R2 is an attempt to take account of the phenomenon of the R2 automatically and spuriously increasing when extra explanatory variables are added to the model.
+
+![](/home/shubham/udemy/course2/adjustedR2.png)
+
+where, p is the total number of explanatory variables in the model (not including the constant term), and n is the sample size.
+ 
+
+Here are some important links for better understanding:
+
+* Wikipedia: [Coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination)
+* Youtube: [R-squared or coefficient of determination | Regression | Probability and Statistics | Khan Academy](https://www.youtube.com/watch?v=lng4ZgConCM) 
+
+Now, let's look on the practical application of both concepts. Here, we will fit our linear regression model for __50_Startups.csv__, where R.D.Spend, Administration, Marketing.Spend, and State are independent variables and Profit is a dependent variable. Dataset can be downloaded from the following link:
+
+Dataset: [50_Startups.csv](https://github.com/shubh2565/Machine-Learning-A-Z/tree/master/Regression)
+
+### Importing and preprocessing the dataset
+
+```{r, , results='asis'}
+# Importing the dataset
+dataset <- read.csv('50_Startups.csv')
+
+library(hwriter)
+
+cat(hwrite(head(dataset), border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+```
+
+
+Since, our State variable is a categorical variable, we need to encode its string values('California', 'Florida', 'New York') into factors.
+
+```{r, , results='asis'}
+# Encoding categorical data
+dataset$State <- factor(dataset$State,
+                       levels = c('California', 'Florida', 'New York'),
+                       labels = c(1, 2, 3))
+
+cat(hwrite(head(dataset), border = 1, table.frame='void', width='300px', table.style='padding: 100px', row.names=FALSE, row.style=list('font-weight:bold')))
+
+
+# Splitting the dataset into the Training set and Test set
+library(caTools)
+set.seed(100)
+split <- sample.split(dataset$Profit, SplitRatio = 0.8)
+training_set <- subset(dataset, split == TRUE)
+test_set <- subset(dataset, split == FALSE)
+
+```
+
+
+### Fitting Multiple Linear Regression to the Training set
+
+```{r}
+regressor <- lm(formula = Profit ~ .,
+               data = training_set)
+
+summary(regressor)
+```
+
+**NOTE:** _We have the P values for different independent variables.If we assume our alpha to be 0.05, then, P values suggest that not all the independent variables are equally significant in our regression model. So, we  can eliminate the non-significant variables using Backward Elimination model._
+
+### Removing the less significant variables
+
+First, we remove the State variable as its P value is significantly higher than our alpha value.
+
+```{r}
+regressor <- lm(formula = Profit ~ R.D.Spend + Administration + Marketing.Spend,
+               data = training_set)
+
+summary(regressor)
+```
+
+We observed that the adjusted R squared values has improved.Now, we remove Administration variable too as it has the P value of **0.745**.
+
+```{r}
+regressor <- lm(formula = Profit ~ R.D.Spend + Marketing.Spend,
+               data = training_set)
+
+summary(regressor)
+```
+
+Now, we remove the Marketing.Spend variable too because of its big P value.
+
+```{r}
+regressor <- lm(formula = Profit ~ R.D.Spend,
+               data = training_set)
+
+summary(regressor)
+```
+
+**NOTE:** After removing the Marketing.Spend variable, we observed that the adjusted R squared value has decreased from its previous value. This suggest that even though Marketing.Spend is not a significant variable according to our alpha (significance level), we can't remove that variable from our regression model because it affects our goodness-of-fit measure. So, our regression model is the one which has R.D.Spend and Marketing.Spend variables.
